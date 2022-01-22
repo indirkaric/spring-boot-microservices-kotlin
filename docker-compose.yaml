@@ -1,0 +1,103 @@
+version: '3'
+services:
+  customer-service:
+    build:
+      context: .
+      dockerfile: docker/customer/Dockerfile
+    environment:
+      CATALINA_OPTS: >-
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8888
+        -Dcom.sun.management.jmxremote.rmi.port=8891
+        -Dcom.sun.management.jmxremote.port=8891
+        -Dcom.sun.management.jmxremote.host=0.0.0.0
+        -Djava.rmi.server.hostname=0.0.0.0
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false  -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.local.only=false
+      JAVA_OPTS: >-
+        -XshowSettings:vm -XX:MinRAMPercentage=5 -XX:MaxRAMPercentage=80
+        -XX:+HeapDumpOnOutOfMemoryError
+      DB_USERNAME: '${DB_USERNAME}'
+      DB_PASSWORD: '${DB_PASSWORD}'
+      DB_NAME: '${CUSTOMER_DB_NAME}'
+      DB_PORT: '${DB_PORT}'
+      DB_HOST: '${DB_HOST}'
+    restart: always
+    ports:
+      - '8080:8080'
+      - '8888:8888'
+      - '8891:8891'
+    volumes:
+      - './lmData:/root/.lm'
+    depends_on:
+      - mysql
+      - rabbitmq
+    networks:
+      test-app-network:
+        aliases:
+          - customer-service
+  order-service:
+    build:
+      context: .
+      dockerfile: docker/order/Dockerfile
+    environment:
+      CATALINA_OPTS: >-
+        -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8889
+        -Dcom.sun.management.jmxremote.rmi.port=8892
+        -Dcom.sun.management.jmxremote.port=8892
+        -Dcom.sun.management.jmxremote.host=0.0.0.0 
+        -Djava.rmi.server.hostname=0.0.0.0
+        -Dcom.sun.management.jmxremote.authenticate=false
+        -Dcom.sun.management.jmxremote.ssl=false  -Dcom.sun.management.jmxremote
+        -Dcom.sun.management.jmxremote.local.only=false
+      JAVA_OPTS: >-
+        -XshowSettings:vm -XX:MinRAMPercentage=5 -XX:MaxRAMPercentage=80
+        -XX:+HeapDumpOnOutOfMemoryError
+      DB_USERNAME: '${DB_USERNAME}'
+      DB_PASSWORD: '${DB_PASSWORD}'
+      DB_NAME: '${ORDER_DB_NAME}'
+      DB_PORT: '${DB_PORT}'
+      DB_HOST: '${DB_HOST}'
+    restart: always
+    ports:
+      - '8085:8085'
+      - '8889:8889'
+      - '8892:8892'
+    volumes:
+      - './lmData:/root/.lf'
+    depends_on:
+      - mysql
+      - rabbitmq
+    networks:
+      test-app-network:
+        aliases:
+          - order-service
+  mysql:
+    container_name: mysql
+    image: 'mysql:5.7'
+    restart: always
+    volumes:
+      - './sql:/docker-entrypoint-initdb.d'
+    ports:
+      - '3306:3306'
+    environment:
+      - 'MYSQL_USER=${DB_USERNAME}'
+      - 'MYSQL_ROOT_PASSWORD=${DB_PASSWORD}'
+      - 'MYSQL_PASSWORD=${DB_PASSWORD}'
+    networks:
+      test-app-network:
+        aliases:
+          - mysql
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    networks:
+      test-app-network:
+        aliases:
+          - rabbitmq
+networks:
+  test-app-network: null

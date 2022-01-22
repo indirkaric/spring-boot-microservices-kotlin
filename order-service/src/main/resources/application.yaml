@@ -1,0 +1,44 @@
+app:
+  version: 1.0.0
+logging:
+  level:
+    org.springframework.web: DEBUG
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    driver-class-name: com.mysql.jdbc.Driver
+    platform: mysql
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    generate-ddl: false
+  flyway:
+    user: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    locations: classpath:db/migration
+    enabled: true
+    check-location: true
+    baseline-on-migrate: false
+  cloud:
+    stream:
+      rabbit:
+        bindings:
+          messaging-channel:
+            destination: messaging-exchange
+            group: messaging-group
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+server:
+  port: 8085
